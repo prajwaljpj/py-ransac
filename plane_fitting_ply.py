@@ -25,6 +25,11 @@ if __name__ == '__main__':
         xx, yy = np.mgrid[0:1:0.1, 0:1:0.1]
         return xx, yy, (-d - a * xx - b * yy) / c
 
+    def reduce_data(xyzs):
+        del_seq = np.array([i for i in range(len(xyzs)) if i%2==0])
+        xyzs = np.delete(xyzs, del_seq)
+        return xyzs
+
     n = 200000
     ip = 50000
     op = 100000
