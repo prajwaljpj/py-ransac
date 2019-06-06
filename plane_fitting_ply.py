@@ -18,6 +18,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from mpl_toolkits import mplot3d
     import plyfile
+    import 
     fig = plt.figure()
     ax = mplot3d.Axes3D(fig)
 
@@ -26,12 +27,14 @@ if __name__ == '__main__':
         return xx, yy, (-d - a * xx - b * yy) / c
 
     def reduce_data(xyzs):
-        del_seq = np.array([i for i in range(len(xyzs)) if i%2==0])
-        xyzs = np.delete(xyzs, del_seq)
+        # del_seq = np.array([i for i in range(len(xyzs)) if i%2==0])
+        # del_seq = np.s_[::2]
+        # print(del_seq)
+        xyzs = np.delete(xyzs, np.s_[::2], axis=0)
         return xyzs
 
-    n = 200000
-    ip = 50000
+    n = 100000
+    ip = 0
     op = 100000
     max_iterations = 100
     goal_inliers = n * 0.2
@@ -43,6 +46,10 @@ if __name__ == '__main__':
     zi= plydata.elements[0].data['z']
 
     xyzs = np.vstack((xi.T, yi.T, zi.T)).T
+    xyzs = reduce_data(xyzs)
+    xyzs = reduce_data(xyzs)
+    xyzs = reduce_data(xyzs)
+    xyzs = reduce_data(xyzs)
 
     ax.scatter3D(xyzs.T[0][ip:op], xyzs.T[1][ip:op], xyzs.T[2][ip:op], s=0.1)
 
