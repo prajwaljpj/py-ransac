@@ -18,7 +18,6 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from mpl_toolkits import mplot3d
     import plyfile
-    import 
     fig = plt.figure()
     ax = mplot3d.Axes3D(fig)
 
