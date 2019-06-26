@@ -163,7 +163,7 @@ viewerPsycho (pcl::visualization::PCLVisualizer& viewer)
 
 
 
-void run_ransac(pcl::visualization::PCLVisualizer& viewer, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
+int run_ransac(pcl::visualization::PCLVisualizer& viewer, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
 {
 
         pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
@@ -200,9 +200,9 @@ void run_ransac(pcl::visualization::PCLVisualizer& viewer, pcl::PointCloud<pcl::
                                                         << cloud->points[inliers->indices[i]].z << std::endl;
             viewer.addPlane(coefficients, cloud->points[inliers->indices[i]].x, cloud[inliers->indices[i]].y, cloud[inliers->indices[i]].z)
         }
+        return 0;
     
-int 
-main ()
+int main ()
 {
     /* pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBA>); */
     /* pcl::io::loadPCDFile ("my_point_cloud.pcd", *cloud); */
