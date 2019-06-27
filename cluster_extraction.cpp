@@ -26,14 +26,17 @@ main (int argc, char** argv)
   /* reader.read ("data/table_scene_lms400.pcd", *cloud); */
   pcl::PCDReader reader;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>), cloud_f (new pcl::PointCloud<pcl::PointXYZ>);
-  reader.read ("data/passthrough/1_pty.pcd", *cloud);
+  reader.read ("data/passthrough/7_pty2.pcd", *cloud);
   std::cout << "PointCloud before filtering has: " << cloud->points.size () << " data points." << std::endl; //*
 
   // Create the filtering object: downsample the dataset using a leaf size of 1cm
   pcl::VoxelGrid<pcl::PointXYZ> vg;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZ>);
   vg.setInputCloud (cloud);
-  vg.setLeafSize (0.0075f, 0.0075f, 0.0075f);
+  // for 1_pc
+  /* vg.setLeafSize (0.0075f, 0.0075f, 0.0075f); */
+  // for 2_pc
+  vg.setLeafSize (0.001f, 0.001f, 0.001f);
   vg.filter (*cloud_filtered);
   std::cout << "PointCloud after filtering has: " << cloud_filtered->points.size ()  << " data points." << std::endl; //*
 
@@ -47,10 +50,10 @@ main (int argc, char** argv)
   seg.setModelType (pcl::SACMODEL_PLANE);
   seg.setMethodType (pcl::SAC_RANSAC);
   seg.setMaxIterations (1000);
-  seg.setDistanceThreshold (0.15);
+  seg.setDistanceThreshold (0.10);
 
   // Write the filtered pointcloud
-  writer.write<pcl::PointXYZ> ("cloud_filtered.pcd", *cloud_filtered, false); //*
+  writer.write<pcl::PointXYZ> ("results/7_res/cloud_filtered.pcd", *cloud_filtered, false); //*
 
   int i=0, nr_points = (int) cloud_filtered->points.size ();
   while (cloud_filtered->points.size () > 0.3 * nr_points)
@@ -105,7 +108,7 @@ main (int argc, char** argv)
 
     std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points." << std::endl;
     std::stringstream ss;
-    ss << "cloud_cluster_" << j << ".pcd";
+    ss << "results/7_res/cloud_cluster_" << j << ".pcd";
     writer.write<pcl::PointXYZ> (ss.str (), *cloud_cluster, false); //*
     j++;
   }
