@@ -16,7 +16,8 @@ int main(int argc, char** argv)
 {
     
   pcl::PCDReader reader;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>), cloud_f (new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PCDWriter writer;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
   reader.read ("results/1_res/cloud_cluster_0.pcd", *cloud);
   std::cout << "PointCloud before filtering has: " << cloud->points.size () << " data points." << std::endl; //*
 
@@ -36,11 +37,23 @@ int main(int argc, char** argv)
   pcl::Kmeans::Centroids centroids = real.get_centroids();
   std::cout << "points in total Cloud : " << cloud->points.size() << std::endl;
   std::cout << "centroid count: " << centroids.size() << std::endl;
+  
   for (int i = 0; i<centroids.size(); i++)
   {
+      pcl::PointCloud<pcl::PointXYZ>::Ptr kmeans_cluster (new pcl::PointCloud<pcl::PointXYZ>);
+      /* kmeans_cluster->points.push_back (real.PointsToClusters); */
+      std::vector<std::int> asdf = pcl::Kmeans::PointsToClusters(real);
+      for (int j = 0; j<asdf.size(); j++)
+      {
+          /* kmeans_cluster = real.PointsToClusters; */
+          std::cout << asdf[j]<< std::endl;
+      }
+      std::stringstream ss;
+      ss << "results/1_res/kmeans_cluster_" << i << ".pcd";
+      writer.write<pcl::PointXYZ> (ss.str(), *kmeans_cluster, false);
       std::cout << i << "_cent output: x: " << centroids[i][0] << " ,";
       std::cout << "y: " << centroids[i][1] << " ,";
       std::cout << "z: " << centroids[i][2] << std::endl;
   }
-
+  return(0);
 }
