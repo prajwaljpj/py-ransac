@@ -106,7 +106,7 @@ public:
         bd = (double)b/255;
     }
     uint32_t getColor(){
-        cout<<r<<'\n'<<g<<'\n'<<b<<'\n'<< endl;
+        /* cout<<r<<'\n'<<g<<'\n'<<b<<'\n'<< std::endl; */
         return ((uint32_t)r<<16|(uint32_t)g<<8|(uint32_t)b);
     }
 };
@@ -165,10 +165,12 @@ void pointCloudCb(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
     seg.setDistanceThreshold(_max_distance);
 
     // Create pointcloud to publish inliers
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pub(new pcl::PointCloud<pcl::PointXYZRGB>);
+    /* pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pub(new pcl::PointCloud<pcl::PointXYZRGB>); */
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pub(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::visualization::PCLVisualizer::Ptr view (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     int original_size(cloud->height*cloud->width);
     int n_planes(0);
-    cout << "here?"<< endl;
+    /* cout << "here?"<< endl; */
     while (cloud->height*cloud->width>original_size*_min_percentage/100){
 
         // Fit a plane
@@ -202,35 +204,36 @@ void pointCloudCb(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
         mean_error/=inliers->indices.size();
 
         // Compute Standard deviation
-        ColorMap cm(min_error,max_error);
+        /* ColorMap cm(min_error,max_error); */
         double sigma(0);
-        cout<< "in while?" << endl;
+        /* cout<< "in while?" << endl; */
         for (int i=0;i<inliers->indices.size();i++){
 
             sigma += pow(err[i] - mean_error,2);
 
             // Get Point
-            cout<< "sigma later?"<< endl;
+            /* cout<< "sigma later?"<< endl; */
             pcl::PointXYZ pt = cloud->points[inliers->indices[i]];
 
             // Copy point to noew cloud
-            pcl::PointXYZRGB pt_color;
-            cout<<"got inliers?"<< endl;
+            pcl::PointXYZ pt_color;
+            /* cout<<"got inliers?"<< endl; */
             pt_color.x = pt.x;
             pt_color.y = pt.y;
             pt_color.z = pt.z;
-            cout<<"got points color?"<<endl;
-            uint32_t rgb;
-            if (_color_pc_with_error){
-                cout<<"in if condition?"<<endl;
-                rgb = cm.getColor(err[i]);}
-            else{
-                cout<<"in else condition?"<<endl;
-                rgb = colors[n_planes].getColor();}
-                cout<<"not in ifelse"<<endl;
-            pt_color.rgb = *reinterpret_cast<float*>(&rgb);
+            /* cout<<"got points color?"<<endl; */
+            /* uint32_t rgb; */
+            /* if (_color_pc_with_error){ */
+            /*     cout<<"in if condition?"<<endl; */
+            /*     rgb = cm.getColor(err[i]);} */
+            /* else{ */
+            /*     cout<<"in else condition?"<<endl; */
+            /*     cout<< n_planes<< std::endl; */
+            /*     rgb = colors[n_planes].getColor();} */
+            /* cout<<"not in ifelse"<<endl; */
+            /* pt_color.rgb = *reinterpret_cast<float*>(&rgb); */
             cloud_pub->points.push_back(pt_color);
-            cout<<"in for?"<<endl;
+            /* cout<<"in for?"<<endl; */
 
         }
         sigma = sqrt(sigma/inliers->indices.size());
@@ -253,19 +256,30 @@ void pointCloudCb(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
         /*          inliers->indices.size(),original_size); */
         /* ROS_INFO("%s: mean error: %f(mm), standard deviation: %f (mm), max error: %f(mm)",_name.c_str(),mean_error,sigma,max_error); */
         /* ROS_INFO("%s: poitns left in cloud %i",_name.c_str(),cloud->width*cloud->height); */
+        std::stringstream plane_name;
+        plane_name << "Plane_" << n_planes;
 
-
+        view->addPlane(coefficients, plane_name);
         cout<< _name<<": fitted plane "<< n_planes << ": " << coefficients->values[0] << "x" << (coefficients->values[1]>=0?"+":"") << coefficients->values[1] <<"y" << (coefficients->values[2]>=0?"+":"") << coefficients->values[2] << "z"<< (coefficients->values[3]>=0?"+":"") << coefficients->values[3] << "=0 (inliers: " << inliers->indices.size() << "u/" << original_size << ")" << std::endl;
         cout << _name << ": mean error: " << mean_error << "(mm), standard deviation: " << sigma << " (mm), max error: " << max_error << "(mm)" << endl;
         cout << _name << ": points left in cloud " << cloud->width*cloud->height << endl;
+        cout << _name << ": number of points in cloud " << cloud->size() << endl;
 
         // Nest iteration
         n_planes++;
     }
 
+    /* pcl::PointCloud<pcl::PointXYZ>Ptr out_pc (new pcl::PointCloud<pcl::PointXYZ>) */
     // Publish points
     pcl::PCDWriter writer;
-    writer.write<pcl::PointXYZRGB> ("results/1_res/points.pcd", *cloud_pub, false);
+    /* writer.write<pcl::PointXYZ> ("results/1_res/points.pcd", *cloud_pub, false); */
+    view = simpleVis(cloud_pub);
+
+    while (!view->wasStopped ())
+    {
+        view->spinOnce (100);
+        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+    }
 }
 
 
