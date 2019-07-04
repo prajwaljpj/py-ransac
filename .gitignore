@@ -4,3 +4,8 @@
 *.vscode
 *.pcd
 *.ply
+Makefile
+CMakeCache.txt
+bin/*
+*.zip
+cmake_install
