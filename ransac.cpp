@@ -1,12 +1,15 @@
 #include <pcl/io/ply_io.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/passthrough.h>
+#include <pcl/visualization/pcl_visualizer.h>
 
 /* #include "plane_fitter/algorithmParametersConfig.h" */
 
@@ -108,7 +111,7 @@ public:
         /* ros::param::param<double>("~max_distance",_max_distance,0.005); */
         /* ros::param::param<double>("~min_percentage",_min_percentage,5); */
         /* ros::param::param<bool>("~color_pc_with_error",_color_pc_with_error,false); */
-        _max_distance = 0.10;
+        _max_distance = 0.02;
         _min_percentage = 5;
         _color_pc_with_error = false;
 
@@ -129,16 +132,36 @@ public:
     /*     _color_pc_with_error = config.paint_with_error; */
     /* } */
 
+
+    pcl::visualization::PCLVisualizer::Ptr simpleVis (pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloudvis){
+      // --------------------------------------------
+      // -----Open 3D viewer and add point cloud-----
+      // --------------------------------------------
+      pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+      viewer->setBackgroundColor (0, 0, 0);
+      /* pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> single_color(centroi, 0, 255, 0); */
+      viewer->addPointCloud<pcl::PointXYZRGB> (cloudvis, "Segmented_planes");
+      /* viewer->addPointCloud<pcl::PointXYZ> (centroi, single_color, "Centroids"); */
+      viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "Segmented_planes");
+      /* viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "Centroids"); */
+      /* viewer->addCoordinateSystem (1.0); */
+      viewer->initCameraParameters ();
+      return (viewer);
+    }
+
     void pointCloudCb(){
 
         // Convert to pcl point cloud
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
-        if (pcl::io::loadPCDFile<pcl::PointXYZ> ("data/1.pcd", *cloud) == -1) //* load the file
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ori (new pcl::PointCloud<pcl::PointXYZ>);
+        if (pcl::io::loadPCDFile<pcl::PointXYZ> ("data/passthrough/1_pty.pcd", *cloud_ori) == -1) //* load the file
         {
             PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
         }
         /* reader.read("data/1.pcd", *cloud_msg); */
-        std::cout<<_name<<": new ponitcloud ("<<cloud->width<<","<<cloud->height<<" ("<<cloud->size()<<"u)"<< std::endl;
+        std::cout<<_name<<": new ponitcloud ("<<cloud_ori->width<<","<<cloud_ori->height<<" ("<<cloud_ori->size()<<"u)"<< std::endl;
+
+
+        pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
 
         // Filter cloud
         /* pcl::PassThrough<pcl::PointXYZ> pass; */
@@ -147,6 +170,17 @@ public:
         /* pass.setFilterLimits(0.001,10000); */
         /* pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>); */
         /* pass.filter (*cloud); */
+
+        // Create the filtering object: downsample the dataset using a leaf size of 1cm
+        pcl::VoxelGrid<pcl::PointXYZ> vg;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+        vg.setInputCloud (cloud_ori);
+        // for 1_pc
+        vg.setLeafSize (0.0075f, 0.0075f, 0.0075f);
+        // for 2_pc
+        /* vg.setLeafSize (0.001f, 0.001f, 0.001f); */
+        vg.filter (*cloud);
+        std::cout << "PointCloud after filtering has: " << cloud->points.size ()  << " data points." << std::endl;
 
         // Get segmentation ready
         pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
@@ -157,12 +191,15 @@ public:
         seg.setModelType (pcl::SACMODEL_PLANE);
         seg.setMethodType (pcl::SAC_RANSAC);
         seg.setDistanceThreshold(_max_distance);
+        seg.setMaxIterations(1000);
+
+        std::cout << "**MODEL PARAMETERS**\n" << "Model Type: RANSAC Plane\n" << "Distance Threshold:" << seg.getDistanceThreshold() << '\n' << "Max Iteration:" << seg.getMaxIterations() << '\n' << "Probability:" << seg.getProbability() << std::endl;
 
         // Create pointcloud to publish inliers
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_pub(new pcl::PointCloud<pcl::PointXYZRGB>);
         int original_size = cloud->height*cloud->width;
         int n_planes(0);
-        std::cout<<"reached 162"<<std::endl;
+        /* std::cout<<"reached 162"<<std::endl; */
         std::cout<<"original_size:"<<original_size<<'\n'<<"_min_percentage:"<<_min_percentage<<std::endl;
         while (cloud->height*cloud->width>original_size*_min_percentage/100){
             /* std::cout<<"entered While"<<std::endl; */
@@ -202,7 +239,7 @@ public:
             ColorMap cm(min_error,max_error);
             double sigma(0);
             for (int i=0;i<inliers->indices.size();i++){
-                std::cout<<"entered second for"<<std::endl;
+                /* std::cout<<"entered second for"<<std::endl; */
 
                 sigma += pow(err[i] - mean_error,2);
 
@@ -232,7 +269,13 @@ public:
             extract.setNegative(true);
             pcl::PointCloud<pcl::PointXYZ> cloudF;
             extract.filter(cloudF);
+
             cloud->swap(cloudF);
+
+            // Add planes
+            std::stringstream plane_name;
+            plane_name << "Plane_" << n_planes;
+            viewer->addPlane(*coefficients, coefficients->values[0], coefficients->values[1], coefficients->values[2], plane_name.str());
 
             // Display infor
             std::cout<< _name<<": fitted plane "<< n_planes << ": " << coefficients->values[0] << "x" << (coefficients->values[1]>=0?"+":"") << coefficients->values[1] <<"y" << (coefficients->values[2]>=0?"+":"") << coefficients->values[2] << "z"<< (coefficients->values[3]>=0?"+":"") << coefficients->values[3] << "=0 (inliers: " << inliers->indices.size() << "u/" << original_size << ")" << std::endl;
@@ -251,11 +294,24 @@ public:
         /* _pub_inliers.publish(cloud_publish); */
 
         /* pcl::io::savePCDFileASCII ("test_pcd.pcd", cloud_pub); */
-        pcl::io::savePLYFileBinary("test_ply.ply", *cloud_pub);
-        std::cerr << "Saved " << cloud_pub->points.size () << " data points to test_pcd.pcd." << std::endl;
+        pcl::io::savePLYFileBinary("results/1_res/ransac/plane_points.ply", *cloud_pub);
+        std::cerr << "Saved " << cloud_pub->points.size () << " data points to plane_points.pcd." << std::endl;
         /* pcl::PCDWriter writer; */
         /* writer.write<pcl::PointXYZ> ("results/1_res/points.pcd", *cloud_pub, false); */
-    }
+        /* viewer = simpleVis(cloud_pub); */
+        viewer->addPointCloud<pcl::PointXYZRGB> (cloud_pub, "Segmented_planes");
+        /* viewer->addPointCloud<pcl::PointXYZ> (centroi, single_color, "Centroids"); */
+        viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "Segmented_planes");
+        /* viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "Centroids"); */
+        /* viewer->addCoordinateSystem (1.0); */
+        viewer->initCameraParameters ();
+
+        while (!viewer->wasStopped ())
+        {
+            viewer->spinOnce (100);
+            boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+        }
+        }
 
     void createColors(){
         uint8_t r = 0;
