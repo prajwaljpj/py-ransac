@@ -1,4 +1,5 @@
 import pypcd
+import numpy
 from gk_cluster import GK
 
 
