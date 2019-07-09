@@ -9,3 +9,4 @@ CMakeCache.txt
 bin/*
 *.zip
 cmake_install
+*.html
