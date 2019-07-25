@@ -14,40 +14,40 @@ import dash_core_components as dcc
 # app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 
-n_clusters = 8
-pc = pypcd.PointCloud.from_path('data/iisc/131.pcd')
+n_clusters = 3
+pc = pypcd.PointCloud.from_path('data/iisc/82.pcd')
 xcoord = pc.pc_data['x']
 ycoord = pc.pc_data['y']
 zcoord = pc.pc_data['z']
-data = np.stack((xcoord, ycoord, zcoord), axis=1) 
+data = np.stack((xcoord, ycoord, zcoord), axis=1)
 datan = data[~np.isnan(data).any(axis=1)]
-g = GK(datan, n_clusters=n_clusters) 
+g = GK(datan, n_clusters=n_clusters)
 fm, cf, ca = g.predict()
+print(fm, cf, ca)
 colors = []
 for i in range(n_clusters):
-    r = random.randint(0,255)
-    g = random.randint(0,255)
-    b = random.randint(0,255)
-    colors.append((r,g,b))
+    r = random.randint(0, 255)
+    g = random.randint(0, 255)
+    b = random.randint(0, 255)
+    colors.append((r, g, b))
 
 color_code = ["rgb"+str(colors[a]) for a in ca]
 
 trace1 = go.Scatter3d(
-        x=xcoord,
-        y=ycoord,
-        z=zcoord,
-        mode='markers',
-        marker=dict(
-            size=1,
-            line=dict(
-                color=color_code,
-                width=0.5
-                )
-            )
+    x=xcoord,
+    y=ycoord,
+    z=zcoord,
+    mode='markers',
+    marker=dict(
+        size=1,
+        line=dict(
+            color=color_code,
+            width=0.5
         )
+    )
+)
 
 dat = [trace1]
 
 
 plot(dat, filename="asdf.html")
-
